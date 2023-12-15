@@ -1,32 +1,54 @@
+function dumpTable(table, depth)
+    if (depth > 200) then
+      print("Error: Depth > 200 in dumpTable()")
+      return
+    end
+    for k,v in pairs(table) do
+      if (type(v) == "table") then
+        print(string.rep("  ", depth)..k..":")
+        dumpTable(v, depth+1)
+      else
+        print(string.rep("  ", depth)..k..": ",v)
+      end
+    end
+end
 --- Render thread guard
 local THREAD_RUNNING = true
 local cpml = require("cpml")
 local mat4 = cpml.mat4
-local vec3 = cpml.vec3
+local vec3 = require("cpml.modules.vec3")
+local vec4 = require("cpml.modules.vec4")
 local R3D = require("R3D")
+
+math.randomseed(os.time())
+
+---Model store 
+-- holds models for calculations
+---@type {[string]:obj}
+local models = {}
 
 ---Model synchronisation
 -- Acts on the calls from the model channel
 local function syncModels()
     local function add(modelId, model)
-        R3D.models[modelId] = model
+        models[modelId] = model
     end
     local function remove (modelId)
-        R3D.models[modelId] = nil
+        models[modelId] = nil
     end
     local function update(modelId, model)
-        local m = R3D.models[modelId]
+        local m = models[modelId]
         for k,v in pairs(model) do m[k] = v end
     end
     local function setMatrix(modelId, model)
-        R3D.models[modelId].matrix = model.matrix
+        models[modelId].matrix = model.matrix
     end
 
     local actions = {
-        add,
-        remove,
-        update,
-        setMatrix
+        add=add,
+        remove=remove,
+        update=update,
+        setMatrix=setMatrix
     }
 
     local channel = R3D.modelChannel
@@ -54,21 +76,69 @@ local function syncInput()
 end
 
 local output = {}
-local function draw(...)
-    table.insert(output,{...})
-end
+
 
 ---@type mat4
 local projection = cpml.mat4.from_perspective(60,400/240,0.3,100)
 projection[6] = projection[6] * -1 -- invert Y axis
 
 ---@type mat4
-local VPMatrix
+local VPMatrix = mat4.identity()
+
+local projectSettings = {0,0,400,240}
+
+local function cullBackFace(v,p,n)
+    return v:sub(p):dot(n) > 0
+end
+
+local function getVertsFromIndices(outVerts,indices)
+    local verts = {}
+    for i = 1, #indices do 
+        verts[i] = outVerts[indices[i].v]
+    end
+    return verts
+end
+
+local function unpackVerts(t)
+    local r = {}
+    for i, vert in ipairs(t) do
+        r[i * 2 - 1] = vert.x
+        r[i * 2] = vert.y
+    end
+    return r
+end
+
+local function polygon(color,verts)
+    table.insert(output,{color=color,polygon=unpackVerts(verts)})
+end
 
 --- Render thread loop
 while THREAD_RUNNING do
     syncModels()
-    VPMatrix = R3D.inputChannel:performAtomic(syncInput)
-    -- ...do the calculations
-    R3D.outputChannel:push(output)
+    ---@type R3D.InputChannelCall
+    local input = R3D.inputChannel:performAtomic(syncInput)
+    --print(dumpTable(input,3))
+    if input and input.mat and input.frustum then
+        VPMatrix = mat4.mul(VPMatrix, projection, mat4.new(input.mat))
+        output = {}
+        for modelId, model in pairs(models) do
+            local outVerts = {}
+            for i, v in ipairs(model.v) do
+                outVerts[i] = mat4.project(v,VPMatrix,projectSettings)
+            end
+            for _, face in pairs(model.f) do
+                local v = vec3.new(model.v[face[1].v])
+                local n = vec3.new(model.vn[face[1].vn])
+                local p = input.frustum.near[1]
+                if not cullBackFace(v,p,n) then
+                
+                    --local diff = math.max(n:dot(lightDir),0.4)
+                    local c = {math.random(),math.random(),math.random()}
+                    local verts = getVertsFromIndices(outVerts,face)
+                    polygon(c, verts)
+                end
+            end
+        end
+        R3D.outputChannel:push(output)
+    end
 end

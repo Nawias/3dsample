@@ -1,3 +1,4 @@
+local cpml   = require"cpml"
 ---constants
 local YAW         = -90.0;
 local PITCH       =  0.0;
@@ -12,17 +13,23 @@ local ZOOM        =  45.0;
 ---@field worldUp cpml.vec3 world up vector
 ---@field yaw number yaw rotation
 ---@field pitch number pitch rotation
-local Camera = Class{
-    init = function (self, pos, yaw, pitch)
-        self.pos = pos or cpml.vec3.new(0,1,0)
-        self.yaw = yaw or YAW
-        self.pitch = pitch or PITCH
-        self.worldUp = cpml.vec3.new(0,1,0)
-        self.front = cpml.vec3.new(0,0,-1)
-        self:updateCameraVectors()
-    end,
+local Camera = {
     up
 }
+Camera.new = function(pos, yaw, pitch)
+    local self = {}
+    self.pos = pos or cpml.vec3.new(0,1,0)
+    self.yaw = yaw or YAW
+    self.pitch = pitch or PITCH
+    self.worldUp = cpml.vec3.new(0,1,0)
+    self.front = cpml.vec3.new(0,0,-1)
+    self = setmetatable(self,Camera)
+    self:updateCameraVectors()
+    return self
+end
+
+Camera.__index = Camera
+
 local tempViewMat = cpml.mat4.new({0,0,0,0,0,0,0,0,0})
 function Camera:getViewMatrix()
     return cpml.mat4.look_at(tempViewMat, self.pos, self.pos:add(self.front), self.up)
