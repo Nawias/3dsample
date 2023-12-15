@@ -63,14 +63,6 @@ function love.load()
 end
 
 
-
-function love.keypressed(key)
-    if key == 'escape' then
-        love.event.quit()
-    end
-
-end
-
 local n,o
 local function getNearPlaneFrustum()
     local r = {}
@@ -95,7 +87,9 @@ function love.update(dt)
     ---@type R3D.InputChannelCall
     local threadInput = { mat=mat, frustum=frustum }
     R3D.inputChannel:push(threadInput)
-
+    if input:pressed"quit" then
+        love.event.quit()
+    end
 end
 
 local function getCalls()
@@ -109,7 +103,8 @@ local function getCalls()
     return calls
 end
 
-function love.draw()
+function love.draw(screen)
+    if screen == "bottom" then return end
     local calls = R3D.outputChannel:performAtomic(getCalls)
     if calls then
         for i, call in ipairs(calls) do
@@ -117,5 +112,7 @@ function love.draw()
             love.graphics.polygon("fill",unpack(call.polygon))
         end      
     end
+    love.graphics.setColor(1,1,1,1)
+    love.graphics.print(love.timer.getFPS())
 end
 
