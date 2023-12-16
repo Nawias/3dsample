@@ -1,17 +1,3 @@
-function dumpTable(table, depth)
-    if (depth > 200) then
-      print("Error: Depth > 200 in dumpTable()")
-      return
-    end
-    for k,v in pairs(table) do
-      if (type(v) == "table") then
-        print(string.rep("  ", depth)..k..":")
-        dumpTable(v, depth+1)
-      else
-        print(string.rep("  ", depth)..k..": ",v)
-      end
-    end
-end
 --- Render thread guard
 local THREAD_RUNNING = true
 local cpml = require("cpml")
@@ -64,15 +50,15 @@ end
 
 ---Input synchronization
 -- Get the latest matrix and clear the queue
----@return mat4
+---@return R3D.InputChannelCall
 local function syncInput()
 -- idea: memo/cache when things are not moving
     local channel = R3D.inputChannel
-    local vp = channel:pop()
+    local input = channel:pop()
     for i=1, channel:getCount() do
-        vp = channel:pop()
+        input = channel:pop()
     end
-    return vp
+    return input
 end
 
 local output = {}
@@ -87,10 +73,19 @@ local VPMatrix = mat4.identity()
 
 local projectSettings = {0,0,400,240}
 
+---Checks for backface culling
+---@param v vec3 vertex
+---@param p vec3 plane
+---@param n vec3 normal
+---@return boolean
 local function cullBackFace(v,p,n)
     return v:sub(p):dot(n) > 0
 end
 
+---Returns collection on vertices from vertex indices
+---@param outVerts vec3[] converted vertices
+---@param indices any
+---@return table
 local function getVertsFromIndices(outVerts,indices)
     local verts = {}
     for i = 1, #indices do 
@@ -99,6 +94,9 @@ local function getVertsFromIndices(outVerts,indices)
     return verts
 end
 
+---Unpacks projected vertices into numbers for drawing
+---@param t vec3[]
+---@return table
 local function unpackVerts(t)
     local r = {}
     for i, vert in ipairs(t) do
@@ -108,6 +106,9 @@ local function unpackVerts(t)
     return r
 end
 
+---Add a drawing call to the output table
+---@param color table
+---@param verts table
 local function polygon(color,verts)
     table.insert(output,{color=color,polygon=unpackVerts(verts)})
 end
@@ -117,7 +118,7 @@ while THREAD_RUNNING do
     syncModels()
     ---@type R3D.InputChannelCall
     local input = R3D.inputChannel:performAtomic(syncInput)
-    --print(dumpTable(input,3))
+
     if input and input.mat and input.frustum then
         VPMatrix = mat4.mul(VPMatrix, projection, mat4.new(input.mat))
         output = {}
@@ -131,9 +132,7 @@ while THREAD_RUNNING do
                 local n = vec3.new(model.vn[face[1].vn])
                 local p = input.frustum.near[1]
                 if not cullBackFace(v,p,n) then
-                
-                    --local diff = math.max(n:dot(lightDir),0.4)
-                    local c = {math.random(),math.random(),math.random()}
+                    local c = {math.random(),math.random(),math.random()} -- Random colors for now
                     local verts = getVertsFromIndices(outVerts,face)
                     polygon(c, verts)
                 end

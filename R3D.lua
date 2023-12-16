@@ -2,7 +2,10 @@
 
 ---@alias R3D.ModelChannelCall { action: "add"|"remove"|"update"|"setMatrix", modelId: string, model: obj }
 ---@alias R3D.InputChannelCall { mat: mat4, frustum:{near:table}}
----@alias R3D.OutputChannelCall table
+---@alias R3D.OutputChannelCall R3D.DrawCall[]
+---@alias R3D.DrawCall {color: table, polygon:number[]}
+
+---@alias R3D.vec3 {x:number, y:number, z:number}
 --#endregion
 
 

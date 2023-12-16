@@ -18,7 +18,7 @@ function dumpTable(table, depth)
         print(string.rep("  ", depth)..k..": ",v)
       end
     end
-  end
+end
 
 ---Purges mat4 table so it can be transferred over a channel
 ---@param mat mat4
@@ -55,6 +55,7 @@ local camera
 local renderThread
 local polonez
 local ploaded = false
+
 function love.load()
     love.window.setMode(400,240)
     camera = Camera.new(cpml.vec3.new(0,3,0))
@@ -66,6 +67,8 @@ end
 
 
 local n,o
+---Calculates simplified view frustum with just the near plane
+---@return { near:{[0]:R3D.vec3, [1]:R3D.vec3} }
 local function getNearPlaneFrustum()
     local r = {}
     n = camera.front
@@ -97,6 +100,8 @@ function love.update(dt)
     end
 end
 
+---Pull the draw calls from the R3D output channel
+---@return R3D.OutputChannelCall
 local function getCalls()
     local channel = R3D.outputChannel
     local count = channel:getCount()
