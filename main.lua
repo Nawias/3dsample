@@ -53,13 +53,15 @@ local input = baton.new {
 
 local camera
 local renderThread
+local polonez
+local ploaded = false
 function love.load()
     love.window.setMode(400,240)
     camera = Camera.new(cpml.vec3.new(0,3,0))
     camera.pitch = -20
-    R3D.modelChannel:push({action="add", modelId="polonez", model=obj_loader.load"polonez.obj"})
     renderThread = love.thread.newThread("renderThread.lua")
     renderThread:start()
+    polonez=obj_loader.load"polonez.obj"
 end
 
 
@@ -87,6 +89,9 @@ function love.update(dt)
     ---@type R3D.InputChannelCall
     local threadInput = { mat=mat, frustum=frustum }
     R3D.inputChannel:push(threadInput)
+    if input:pressed"action" and not ploaded then
+        R3D.modelChannel:push({action="add", modelId="polonez", model=polonez})
+    end
     if input:pressed"quit" then
         love.event.quit()
     end
