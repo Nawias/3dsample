@@ -1,4 +1,4 @@
-local cpml   = require"cpml"
+local cpml   = require("libraries.cpml")
 ---constants
 local YAW         = -90.0;
 local PITCH       =  0.0;
@@ -47,7 +47,7 @@ function Camera:updateCameraVectors()
     self.front = front:normalize()
     self.right = (self.front:cross(self.worldUp)):normalize()
     self.up = (self.right:cross(self.front)):normalize()
-    
+
 end
 
 function Camera:update(dt,moveX, moveY, rotX, rotY)
