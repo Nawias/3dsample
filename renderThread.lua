@@ -5,7 +5,7 @@ local cpml = require("libraries.cpml")
 local mat4 = cpml.mat4
 local vec3 = require("libraries.cpml.modules.vec3")
 local vec4 = require("libraries.cpml.modules.vec4")
-local R3D = require("libraries.R3D")
+local R3D = require("R3D")
 
 math.randomseed(os.time())
 

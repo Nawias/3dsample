@@ -1,8 +1,8 @@
 local baton  = require("libraries.baton")
 local cpml   = require("libraries.cpml")
 local Timer  = require("libraries.timer")
-local R3D    = require("libraries.R3D")
-local Camera = require("libraries.camera")
+local R3D    = require("R3D")
+local Camera = require("camera")
 local obj_loader = require("libraries.obj_loader")
 
 local function dumpTable(table, depth)

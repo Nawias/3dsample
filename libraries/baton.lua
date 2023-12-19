@@ -323,14 +323,6 @@ function Player:get(name)
 	end
 end
 
-function Player:buttonName(name)
-	if self._controls[name] then
-		return self._controls[name].sources[1]
-	else
-		error('No control with name "' .. name .. '" defined', 3)
-	end
-end
-
 -- gets whether a control or axis pair is "held down"
 function Player:down(name)
 	if self._pairs[name] then
