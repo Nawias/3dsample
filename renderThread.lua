@@ -1,9 +1,10 @@
 --- Render thread guard
 local THREAD_RUNNING = true
-local cpml = require("cpml")
+local cpml = require("libraries.cpml")
+
 local mat4 = cpml.mat4
-local vec3 = require("cpml.modules.vec3")
-local vec4 = require("cpml.modules.vec4")
+local vec3 = require("libraries.cpml.modules.vec3")
+local vec4 = require("libraries.cpml.modules.vec4")
 local R3D = require("R3D")
 
 math.randomseed(os.time())
@@ -64,7 +65,7 @@ local function syncModels()
     local channel = R3D.modelChannel
     local count = channel:getCount()
 
-    
+
     for i = 1, count do
         ---@type R3D.ModelChannelCall
         local call = channel:pop()
@@ -112,7 +113,7 @@ end
 ---@return table
 local function getVertsFromIndices(outVerts,indices)
     local verts = {}
-    for i = 1, #indices do 
+    for i = 1, #indices do
         verts[i] = outVerts[indices[i].v]
     end
     return verts
@@ -158,7 +159,8 @@ while THREAD_RUNNING do
                 local p = input.frustum.near[1]
                 if not cullBackFace(v,p,n) then
                     local diff = math.max(n:dot(lightDir),0.4)
-                    local c = materials[modelId][face.mtl] 
+                    local matlib = materials[modelId]
+                    local c = matlib and matlib[face.mtl] or nil
                     c = multiplyColor(c and c or {0.8,0.8,0.8},diff*0.7)
                     local verts = getVertsFromIndices(outVerts,face)
                     polygon(c, verts)
