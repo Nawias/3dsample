@@ -1,14 +1,15 @@
 --- Render thread guard
 local THREAD_RUNNING = true
-local cpml = require("cpml")
+local cpml = require("libraries.cpml")
+
 local mat4 = cpml.mat4
-local vec3 = require("cpml.modules.vec3")
-local vec4 = require("cpml.modules.vec4")
+local vec3 = require("libraries.cpml.modules.vec3")
+local vec4 = require("libraries.cpml.modules.vec4")
 local R3D = require("R3D")
 
 math.randomseed(os.time())
 
----Model store 
+---Model store
 -- holds models for calculations
 ---@type {[string]:obj}
 local models = {}
@@ -40,7 +41,7 @@ local function syncModels()
     local channel = R3D.modelChannel
     local count = channel:getCount()
 
-    
+
     for i = 1, count do
         ---@type R3D.ModelChannelCall
         local call = channel:pop()
@@ -88,7 +89,7 @@ end
 ---@return table
 local function getVertsFromIndices(outVerts,indices)
     local verts = {}
-    for i = 1, #indices do 
+    for i = 1, #indices do
         verts[i] = outVerts[indices[i].v]
     end
     return verts
