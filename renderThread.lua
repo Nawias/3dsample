@@ -8,23 +8,47 @@ local R3D = require("R3D")
 
 math.randomseed(os.time())
 
+local lightDir = vec3.new(0.3,0.3,0.3):normalize()
+
+local function getAverageZ(t)
+    local sum = 0
+    for _,v in pairs(t) do -- Get the sum of all numbers in t
+        sum = sum + v.z
+    end
+    return sum / #t
+end
+
+local function multiplyColor(color, scalar)
+    return {color[1]*scalar,color[2]*scalar,color[3]*scalar}
+end
+
 ---Model store 
 -- holds models for calculations
 ---@type {[string]:obj}
 local models = {}
 
+---Material store
+-- holds materials
+---@type {[string]:table}
+local materials = {}
+
 ---Model synchronisation
 -- Acts on the calls from the model channel
 local function syncModels()
-    local function add(modelId, model)
+    local function add(modelId, model,mtl)
         models[modelId] = model
+        materials[modelId] = mtl
     end
     local function remove (modelId)
         models[modelId] = nil
+        materials[modelId] = nil
     end
-    local function update(modelId, model)
+    local function update(modelId, model,mtl)
         local m = models[modelId]
         for k,v in pairs(model) do m[k] = v end
+        if mtl then
+            materials[modelId] = mtl
+        end
     end
     local function setMatrix(modelId, model)
         models[modelId].matrix = model.matrix
@@ -44,7 +68,7 @@ local function syncModels()
     for i = 1, count do
         ---@type R3D.ModelChannelCall
         local call = channel:pop()
-        actions[call.action](call.modelId,call.model)
+        actions[call.action](call.modelId,call.model,call.mtl)
     end
 end
 
@@ -110,7 +134,8 @@ end
 ---@param color table
 ---@param verts table
 local function polygon(color,verts)
-    table.insert(output,{color=color,polygon=unpackVerts(verts)})
+    local zindex = getAverageZ(verts)
+    table.insert(output,{color=color,polygon=unpackVerts(verts),zindex = zindex})
 end
 
 --- Render thread loop
@@ -132,12 +157,15 @@ while THREAD_RUNNING do
                 local n = vec3.new(model.vn[face[1].vn])
                 local p = input.frustum.near[1]
                 if not cullBackFace(v,p,n) then
-                    local c = {math.random(),math.random(),math.random()} -- Random colors for now
+                    local diff = math.max(n:dot(lightDir),0.4)
+                    local c = materials[modelId][face.mtl] 
+                    c = multiplyColor(c and c or {0.8,0.8,0.8},diff*0.7)
                     local verts = getVertsFromIndices(outVerts,face)
                     polygon(c, verts)
                 end
             end
         end
+        table.sort(output,function(a, b) return a.zindex > b.zindex end)
         R3D.outputChannel:push(output)
     end
 end

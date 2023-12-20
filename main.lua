@@ -93,7 +93,7 @@ function love.update(dt)
     local threadInput = { mat=mat, frustum=frustum }
     R3D.inputChannel:push(threadInput)
     if input:pressed"action" and not ploaded then
-        R3D.modelChannel:push({action="add", modelId="polonez", model=polonez})
+        R3D.modelChannel:push({action="add", modelId="polonez", model=polonez, mtl={black={0.2,0.2,0.2},white={0.8,0.8,0.8},body={0.2,0.8,0.5}, red={0.457,0.09,0}, orange={0.8,0.159,0}}})
     end
     if input:pressed"quit" then
         love.event.quit()
@@ -113,10 +113,13 @@ local function getCalls()
     return calls
 end
 
+local callCache
 function love.draw(screen)
     if screen == "bottom" then return end
     local calls = R3D.outputChannel:performAtomic(getCalls)
+    calls = calls or callCache
     if calls then
+        callCache = calls
         for i, call in ipairs(calls) do
             love.graphics.setColor(call.color)
             love.graphics.polygon("fill",unpack(call.polygon))
