@@ -56,6 +56,7 @@ local input = baton.new(
     },
     joystick = love.joystick.getJoysticks()[1],
 })
+local frames3D, fps3D = 0, 0
 
 local camera = Camera.new(cpml.vec3.new(0,2,3))
 camera.pitch = -30
@@ -112,8 +113,15 @@ local function getNearPlaneFrustum()
     return r
 end
 
-
+local fullSecond = 0
 function love.update(dt)
+    fullSecond = fullSecond + dt
+    if (fullSecond > 1) then
+        fullSecond = fullSecond - 1
+        fps3D = frames3D
+        frames3D = 0
+    end
+
     input:update()
 
     local dx, dy = input:get('move')
@@ -160,23 +168,19 @@ local function getCalls()
     return calls
 end
 
-local info =
-[[
-FPS: %d
-Model: %s
-]]
 local callCache = nil
 local info =
 [[
 FPS: %d
+FPS (3D): %d
 Model: %s
 ]]
 
-local callCache
 function love.draw(screen)
     if screen == "bottom" then return end
 
     local calls = R3D.outputChannel:performAtomic(getCalls)
+    frames3D = frames3D + ( calls and 1 or 0 )
     calls = calls or callCache
     if calls then
         callCache = calls
@@ -187,5 +191,5 @@ function love.draw(screen)
     end
 
     love.graphics.setColor(1,1,1,1)
-    love.graphics.print(info:format(love.timer.getFPS(), models_list[model_index]))
+    love.graphics.print(info:format(love.timer.getFPS(), fps3D, models_list[model_index]))
 end
